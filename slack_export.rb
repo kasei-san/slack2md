@@ -2,25 +2,27 @@
 
 require 'dotenv/load'
 require 'date'
+require 'fileutils'
 require 'active_support/time'
 require_relative 'lib/slack_client'
 require_relative 'lib/message_formatter'
 require_relative 'lib/markdown_writer'
 
 class SlackExporter
-  def initialize(date = nil)
+  def initialize(date = nil, output_dir = '.')
     @date = parse_date(date)
+    @output_dir = output_dir
     validate_env_variables!
     @client = SlackClient.new
     @formatter = MessageFormatter.new(@client)
-    @writer = MarkdownWriter.new(@date)
+    @writer = MarkdownWriter.new(@date, @output_dir)
   end
 
   def export
     messages = @client.fetch_channel_messages(ENV['SLACK_CHANNEL_ID'], @date)
     formatted_messages = format_messages(messages)
-    @writer.write(formatted_messages)
-    puts "エクスポートが完了しました。出力ファイル: #{@date.strftime('%Y%m%d')}.md"
+    output_file = @writer.write(formatted_messages)
+    puts "エクスポートが完了しました。出力ファイル: #{output_file}"
   end
 
   private
@@ -55,10 +57,12 @@ end
 if __FILE__ == $0
   begin
     date = ARGV[0]
-    exporter = SlackExporter.new(date)
+    output_dir = ARGV[1] || '.'
+    exporter = SlackExporter.new(date, output_dir)
     exporter.export
   rescue StandardError => e
     puts "エラーが発生しました: #{e.message}"
+    puts "使用方法: #{$0} [YYYY-MM-DD] [出力先ディレクトリ]"
     exit 1
   end
 end
