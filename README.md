@@ -1,4 +1,4 @@
-# Slack Export Tool
+# slack2md
 
 Slackチャンネルの会話履歴をマークダウン形式でエクスポートするツールです。
 
