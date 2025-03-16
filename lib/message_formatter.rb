@@ -51,15 +51,21 @@ class MessageFormatter
       user_info = get_user_info($1)
       "@#{user_info&.name || $1}"
     end
-    # コードブロックを保持（前後に改行を追加）
-    text = text.gsub(/```(.*?)```/m) do |match|
-      content = $1.strip
-      "\n```\n#{content}\n```\n"
+
+    # テキストをコードブロックとそれ以外に分割して処理
+    parts = text.split(/(```.*?```)/m)
+    formatted_parts = parts.map.with_index do |part, i|
+      if i.odd? # コードブロック
+        content = part.match(/```(.*?)```/m)[1].strip
+        "\n```\n#{content}\n```\n"
+      else # 通常のテキスト
+        part.gsub(/\n/, "<BR>\n#{' ' * indent_level}")
+      end
     end
+
     # インラインコードを保持
+    text = formatted_parts.join
     text = text.gsub(/`([^`]+)`/, '`\1`')
-    # コードブロック以外の改行に<BR>を追加
-    text = text.gsub(/\n(?!```|.*```\n)/, "<BR>\n#{' ' * indent_level}")
     # 末尾の余分な改行を削除
     text.rstrip
   end
